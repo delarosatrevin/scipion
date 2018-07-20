@@ -30,7 +30,7 @@ import sys
 import importlib
 import traceback
 
-from pyworkflow.em import Domain
+from pyworkflow.plugin import Domain
 import pyworkflow.utils as pwutils
 
 

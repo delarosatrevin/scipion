@@ -28,8 +28,14 @@ import os
 import sys
 from itertools import izip
 import PIL
+try:
+    import xmipp
+except:
+    print("Cannot import xmipp features. You might need to run "
+          "\nscipion install -j 4\n"
+          "And install xmipp plugin.")
+    exit(0)
 
-import xmipp
 import pyworkflow.utils as pwutils
 
 from constants import *

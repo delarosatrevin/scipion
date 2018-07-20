@@ -455,12 +455,16 @@ Example: scipion install eman-2.12
                     os.makedirs(path)
 
         def build(args):
-            # sys.path.append(XMIPP_LIB)
+
             # Just importing the script will launch the install actions
             import install.script as script
-            # Remove targets names from environment, that are
-            # not recognized by Scons.
-            # TODO: think more deeply in a way to separate
+
+
+            # Do not install Xmipp here....xmipp plugin should do it
+            # TODO: clean all this code once
+            return
+
+
             # options for scons and our own install script
             sconsArgs = [a for a in args if not script.env.hasTarget(a)]
 
