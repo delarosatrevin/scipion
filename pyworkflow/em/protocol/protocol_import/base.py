@@ -36,7 +36,6 @@ from pyworkflow.utils.path import expandPattern, copyFile, createAbsLink
 from pyworkflow.em.protocol import EMProtocol
 
 
-
 class ProtImport(EMProtocol):
     """ Base class for other all Import protocols. """
 
@@ -53,7 +52,7 @@ class ProtImportFiles(ProtImport):
     """
     IMPORT_FROM_FILES = 0
 
-    #--------------------------- DEFINE param functions ------------------------
+    # -------------------------- DEFINE param functions -----------------------
     def _defineParams(self, form):
         importChoices = self._getImportChoices()
         filesCondition = self._getFilesCondition()
@@ -110,9 +109,11 @@ class ProtImportFiles(ProtImport):
 
         self._defineAcquisitionParams(form)
 
-        form.addSection('Streaming')
+        form.addSection('Extra')
 
-        form.addParam('dataStreaming', params.BooleanParam, default=False,
+        group = form.addGroup('Streaming')
+
+        group.addParam('dataStreaming', params.BooleanParam, default=False,
               label="Process data in streaming?",
               help="Select this option if you want import data as it is "
                    "generated and process on the fly by next protocols. "
@@ -120,7 +121,7 @@ class ProtImportFiles(ProtImport):
                    "new files and will update the output Set, which can "
                    "be used right away by next steps.")
 
-        form.addParam('timeout', params.IntParam, default=43200,
+        group.addParam('timeout', params.IntParam, default=43200,
               condition='dataStreaming',
               label="Timeout (secs)",
               help="Interval of time (in seconds) after which, if no new file "
@@ -135,7 +136,7 @@ class ProtImportFiles(ProtImport):
                    "movies, the timeout won't be refreshed until a whole "
                    "movie is stacked.")
 
-        form.addParam('fileTimeout', params.IntParam, default=30,
+        group.addParam('fileTimeout', params.IntParam, default=30,
               condition='dataStreaming',
               label="File timeout (secs)",
               help="Interval of time (in seconds) after which, if a file has "
@@ -162,7 +163,7 @@ class ProtImportFiles(ProtImport):
     def _getDefaultChoice(self):
         return  self.IMPORT_FROM_FILES
 
-    #--------------------------- INFO functions --------------------------------
+    # -------------------------- INFO functions -------------------------------
     def _validate(self):
         errors = []
         if self.importFrom == self.IMPORT_FROM_FILES:
@@ -177,7 +178,7 @@ class ProtImportFiles(ProtImport):
 
         return errors
 
-    #--------------------------- BASE methods to be overriden ------------------
+    # -------------------------- BASE methods to be overriden -----------------
     def _getImportChoices(self):
         """ Return a list of possible choices
         from which the import can be done.
@@ -192,7 +193,7 @@ class ProtImportFiles(ProtImport):
         """
         return '(importFrom == %d)' % self.IMPORT_FROM_FILES
 
-    #--------------------------- UTILS functions -------------------------------
+    # -------------------------- UTILS functions ------------------------------
     def getPattern(self):
         """ Expand the pattern using environ vars or username
         and also replacing special character # by digit matching.
