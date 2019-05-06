@@ -72,47 +72,48 @@ class ProtImportMicBase(ProtImportImages):
         """ Options to blacklist certain items when launching the
         import protocol.
         """
-        form.addSection(label="Blacklist")
-        form.addParam("blacklistSet", params.PointerParam,
-                      pointerClass=self._outputClassName,
-                      allowsNull=True,
-                      label="Blacklist Set",
-                      help="Files on this set will not be imported")
-        form.addParam('blacklistDateFrom', params.StringParam,
-                      label="Blacklist from date",
-                      allowsNull=True,
-                      help="Files acquired after this date will not be imported. "
-                           "Must follow format: YYYY-mm-dd HH:MM:SS \n"
-                           "e.g: 2019-01-14 14:18:05")
-        form.addParam('blacklistDateTo', params.StringParam,
-                      label="Blacklist to date",
-                      allowsNull=True,
-                      help="Files acquired before this date will not be imported. "
-                           "Must follow format: YYYY-mm-dd HH:MM:SS \n"
-                           "e.g: 2019-01-14 14:18:05")
-        form.addParam('useRegexps', params.BooleanParam,
-                      default=True,
-                      label='Blacklist file has RegExps',
-                      help="Choose Yes if the black list file contains regular expressions. Set to No if "
-                           "the black list file contains file names. Ignore if not entering a blacklist file")
-        form.addParam('blacklistFile', params.FileParam,
-                      label="Blacklist File",
-                      allowsNull=True,
-                      help="Blacklist everything included in this file. If Use RegExps is True,"
-                           "lines will be interpreted as regular expressions. E.g: \n"
-                           "(.*)GRID_0[1-5](.*)\n"
-                           "(.*)/GRID_10/Falcon_2019_01_14-16_(.*)\n"
-                           "If Use RegExps is False, lines will be interpreted as file names. E.g.\n"
-                           "/path/to/GRID_10/Falcon_2019_01_14-16_51_20_0_movie.mrcs\n"
-                           "/path/to/GRID_10/Falcon_2019_01_14-16_55_40_0_movie.mrcs"
-                      )
+        group = form.addGroup("Blacklist")
+        group.addParam("blacklistSet", params.PointerParam,
+                       pointerClass=self._outputClassName,
+                       allowsNull=True,
+                       label="Blacklist Set",
+                       help="Files on this set will not be imported")
+        group.addParam('blacklistDateFrom', params.StringParam,
+                       label="Blacklist from date",
+                       allowsNull=True,
+                       help="Files acquired after this date will not be imported. "
+                            "Must follow format: YYYY-mm-dd HH:MM:SS \n"
+                            "e.g: 2019-01-14 14:18:05")
+        group.addParam('blacklistDateTo', params.StringParam,
+                       label="Blacklist to date",
+                       allowsNull=True,
+                       help="Files acquired before this date will not be imported. "
+                            "Must follow format: YYYY-mm-dd HH:MM:SS \n"
+                            "e.g: 2019-01-14 14:18:05")
+        group.addParam('useRegexps', params.BooleanParam,
+                       default=True,
+                       label='Blacklist file has RegExps',
+                       help="Choose Yes if the black list file contains regular "
+                            "expressions. Set to No if the black list file "
+                            "contains file names. Ignore if not entering a "
+                            "blacklist file")
+        group.addParam('blacklistFile', params.FileParam,
+                       label="Blacklist File",
+                       allowsNull=True,
+                       help="Blacklist everything included in this file. If Use RegExps is True,"
+                            "lines will be interpreted as regular expressions. E.g: \n"
+                            "(.*)GRID_0[1-5](.*)\n"
+                            "(.*)/GRID_10/Falcon_2019_01_14-16_(.*)\n"
+                            "If Use RegExps is False, lines will be interpreted as file names. E.g.\n"
+                            "/path/to/GRID_10/Falcon_2019_01_14-16_51_20_0_movie.mrcs\n"
+                            "/path/to/GRID_10/Falcon_2019_01_14-16_55_40_0_movie.mrcs")
 
     def _validateBlacklist(self):
         errors = []
         blacklistBySet = self.blacklistSet.get()
         if blacklistBySet and blacklistBySet.isStreamOpen():
-            errors.append("Can't blacklist an open set. "
-                          "Please stop streaming or  wait until streaming is done to blacklist this set.")
+            errors.append("Can't blacklist an open set. Please stop streaming "
+                          "or wait until streaming is done to blacklist this set.")
 
         dates = [self.blacklistDateFrom.get(), self.blacklistDateTo.get()]
         parsedDates = []
@@ -457,60 +458,49 @@ class ProtImportMovies(ProtImportMicBase):
     
     def _defineParams(self, form):
         ProtImportMicBase._defineParams(self, form)
+
+        extra = form.getSection('Extra')
+        group = extra.addGroup('Frames', expertLevel=params.LEVEL_ADVANCED)
         
-        form.addSection('Frames')
-        
-        streamingConditioned = "dataStreaming"
         framesCondition = "inputIndividualFrames"
         
-        form.addParam('inputIndividualFrames', params.BooleanParam,
-                      default=False,
-                      label="Input individual frames?",
-                      help="Select Yes if movies are acquired in individual "
-                           "frame files. ")
-        form.addParam('numberOfIndividualFrames', params.IntParam,
-                      condition=framesCondition,
-                      label='Number of frames',
-                      help='Provide how many frames are per movie. ')
-        form.addParam('stackFrames', params.BooleanParam,
-                      default=False, condition=framesCondition,
-                      label="Create movie stacks?",
-                      help="Select Yes if you want to create a new stack for "
-                           "each movies with its frames. ")
+        group.addParam('inputIndividualFrames', params.BooleanParam,
+                       default=False,
+                       label="Input individual frames?",
+                       help="Select Yes if movies are acquired in individual "
+                            "frame files. ")
+        group.addParam('numberOfIndividualFrames', params.IntParam,
+                       condition=framesCondition,
+                       label='Number of frames',
+                       help='Provide how many frames are per movie. ')
+        group.addParam('stackFrames', params.BooleanParam,
+                       default=False, condition=framesCondition,
+                       label="Create movie stacks?",
+                       help="Select Yes if you want to create a new stack for "
+                            "each movies with its frames. ")
         # This is not working so for now its hidden
-        form.addParam('writeMoviesInProject', params.BooleanParam,
-                      default=False,
-                      condition=framesCondition + " and stackFrames",
-                      label="Write stacks in the project folder?",
-                      help="If Yes, the created stack files will be written "
-                           "in the project folder. By default the movies will "
-                           "be written in the same place where input frames "
-                           "are.")
-        form.addParam('movieSuffix', params.StringParam,
-                      default='_frames.mrcs',
-                      condition=framesCondition + " and stackFrames",
-                      label="Movie suffix",
-                      help="Suffix added to the output movie filename."
-                           "Use the extension to select the format ("
-                           "e.g., .mrcs, .stk)")
-        form.addParam('deleteFrames', params.BooleanParam,
-                      default=False,
-                      condition=framesCondition + " and stackFrames",
-                      label="Delete frame files?",
-                      help="Select Yes if you want to remove the individual "
-                           "frame files after creating the movie stack. ")
+        group.addParam('writeMoviesInProject', params.BooleanParam,
+                       default=False,
+                       condition=framesCondition + " and stackFrames",
+                       label="Write stacks in the project folder?",
+                       help="If Yes, the created stack files will be written "
+                            "in the project folder. By default the movies will "
+                            "be written in the same place where input frames "
+                            "are.")
+        group.addParam('movieSuffix', params.StringParam,
+                       default='_frames.mrcs',
+                       condition=framesCondition + " and stackFrames",
+                       label="Movie suffix",
+                       help="Suffix added to the output movie filename."
+                            "Use the extension to select the format ("
+                            "e.g., .mrcs, .stk)")
+        group.addParam('deleteFrames', params.BooleanParam,
+                       default=False,
+                       condition=framesCondition + " and stackFrames",
+                       label="Delete frame files?",
+                       help="Select Yes if you want to remove the individual "
+                            "frame files after creating the movie stack. ")
         
-        streamingSection = form.getSection('Streaming')
-        streamingSection.addParam('moviesToExclude', params.PointerParam,
-                                  pointerClass='SetOfMovies',
-                                  condition=streamingConditioned,
-                                  allowsNull=True,
-                                  expertLevel=params.LEVEL_ADVANCED,
-                                  label="Previuos movies to exclude",
-                                  help="Select a setOfMovies that are already "
-                                       "imported that you want to exclude for "
-                                       "this import.")
-
     # --------------------------- INSERT functions ----------------------------
     def _insertAllSteps(self):
         # Only the import movies has property 'inputIndividualFrames'
