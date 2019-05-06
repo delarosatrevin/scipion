@@ -42,7 +42,6 @@ from pyworkflow.em.data import Acquisition
 from base import ProtImportFiles
 
 
-
 class ProtImportImages(ProtImportFiles):
     """ Common protocol to import a set of images into the project. """
     # The following class property should be set in each import subclass
@@ -54,7 +53,7 @@ class ProtImportImages(ProtImportFiles):
     # see if it is a binary stack containing more items
     _checkStacks = True
         
-    #--------------------------- DEFINE param functions ------------------------
+    # -------------------------- DEFINE param functions -----------------------
 
     def _defineAcquisitionParams(self, form):
         """ Define acquisition parameters, it can be overriden
@@ -92,7 +91,7 @@ class ProtImportImages(ProtImportFiles):
         But movie-import also can have a wizard to read from FEI xml files. """
         return 'importFrom != %d' % self.IMPORT_FROM_FILES
 
-    #--------------------------- INSERT functions ------------------------------
+    # -------------------------- INSERT functions -----------------------------
     def _insertAllSteps(self):
 
         # Only the import movies has property 'inputIndividualFrames'
@@ -110,7 +109,7 @@ class ProtImportImages(ProtImportFiles):
                                  self.amplitudeContrast.get(),
                                  self.magnification.get())
         
-    #--------------------------- STEPS functions -------------------------------
+    # -------------------------- STEPS functions ------------------------------
     def importImagesStep(self, pattern, voltage, sphericalAberration, 
                          amplitudeContrast, magnification):
         """ Copy images matching the filename pattern
@@ -134,7 +133,7 @@ class ProtImportImages(ProtImportFiles):
         img.setAcquisition(acquisition)
         n = 1
         copyOrLink = self.getCopyOrLink()
-        alreadyWarned = False # Use this flag to warn only once
+        alreadyWarned = False  # Use this flag to warn only once
 
         for i, (fileName, fileId) in enumerate(self.iterFiles()):
             if self.isBlacklisted(fileName):
@@ -331,7 +330,7 @@ class ProtImportImages(ProtImportFiles):
             errors.append('  %s' % " ".join(badChars))
         return errors
 
-        #--------------------------- INFO functions ----------------------------
+    # -------------------------- INFO functions ---------------------------
     def _validateImages(self):
         errors = []
         ih = ImageHandler()
@@ -407,7 +406,7 @@ class ProtImportImages(ProtImportFiles):
                               self.getObjectTag(self._getOutputName())))
         return methods
     
-    #--------------------------- UTILS functions -------------------------------
+    # -------------------------- UTILS functions ------------------------------
     def _cleanUp(self):
         """Empty method to override in child classes."""
         pass
@@ -533,7 +532,7 @@ class ProtImportImages(ProtImportFiles):
     def _createOutputSet(self):
         """ Create the output set that will be populated as more data is
         imported. """
-
+        pass
 
     def processImportDict(self, importDict, importDir):
         """
@@ -581,4 +580,3 @@ class ProtImportImages(ProtImportFiles):
 
     def streamingHasFinished(self):
         return os.path.exists(self._getStopStreamingFilename())
-    
