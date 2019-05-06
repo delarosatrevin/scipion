@@ -74,7 +74,7 @@ class ProtImportMicBase(ProtImportImages):
         """
         form.addSection(label="Blacklist")
         form.addParam("blacklistSet", params.PointerParam,
-                      pointerClass=self._getBlacklistSetClass(),
+                      pointerClass=self._outputClassName,
                       allowsNull=True,
                       label="Blacklist Set",
                       help="Files on this set will not be imported")
@@ -106,11 +106,6 @@ class ProtImportMicBase(ProtImportImages):
                            "/path/to/GRID_10/Falcon_2019_01_14-16_51_20_0_movie.mrcs\n"
                            "/path/to/GRID_10/Falcon_2019_01_14-16_55_40_0_movie.mrcs"
                       )
-
-    def _getBlacklistSetClass(self):
-        """ Returns the class to be blacklisted by this protocol.
-        """
-        return "SetOfImages"
 
     def _validateBlacklist(self):
         errors = []
@@ -313,34 +308,30 @@ class ProtImportMicrographs(ProtImportMicBase):
         choices = ProtImportImages._getImportChoices(self)
         return choices + ['emx', 'xmipp3', 'scipion']
 
-    def _getBlacklistSetClass(self):
-        """ Returns the class to be blacklisted by this protocol.
-        """
-        return "SetOfMicrographs"
-    
     def _defineImportParams(self, form):
         """ Just redefine to put some import parameters
         before the acquisition related parameters.
         """
-        form.addParam('emxFile', params.FileParam,
-              condition = '(importFrom == %d)' % self.IMPORT_FROM_EMX,
-              label='Input EMX file',
-              help="Select the EMX file containing micrographs information.\n"
-                   "See more about [[http://i2pc.cnb.csic.es/emx][EMX format]]")
+        form.addParam(
+            'emxFile', params.FileParam,
+            condition='(importFrom == %d)' % self.IMPORT_FROM_EMX,
+            label='Input EMX file',
+            help="Select the EMX file containing micrographs information.\n"
+                 "See more about [[http://i2pc.cnb.csic.es/emx][EMX format]]")
         
         form.addParam('mdFile', params.FileParam,
-                      condition = '(importFrom == %d)' % self.IMPORT_FROM_XMIPP3,
+                      condition='(importFrom == %d)' % self.IMPORT_FROM_XMIPP3,
                       label='Micrographs metadata file',
                       help="Select the micrographs Xmipp metadata file.\n"
                            "It is usually a _micrograph.xmd_ file result\n"
                            "from import, preprocess or downsample protocols.")
         
         form.addParam('sqliteFile', params.FileParam,
-                      condition = '(importFrom == %d)' % self.IMPORT_FROM_SCIPION,
+                      condition='(importFrom == %d)' % self.IMPORT_FROM_SCIPION,
                       label='Micrographs sqlite file',
                       help="Select the micrographs sqlite file.\n")
     
-    #--------------------------- INSERT functions ------------------------------
+    # -------------------------- INSERT functions -----------------------------
     def _insertAllSteps(self):
         importFrom = self.importFrom.get()
         ci = self.getImportClass()
@@ -351,7 +342,7 @@ class ProtImportMicrographs(ProtImportMicBase):
             self._insertFunctionStep('importMicrographsStep', importFrom,
                                      self.importFilePath)
     
-    #--------------------------- STEPS functions -------------------------------
+    # -------------------------- STEPS functions ------------------------------
     def importMicrographsStep(self, importFrom, *args):
         ci = self.getImportClass()
         ci.importMicrographs()
@@ -377,7 +368,7 @@ class ProtImportMicrographs(ProtImportMicBase):
             
         self.summaryVar.set(summary)
     
-    #--------------------------- INFO functions --------------------------------
+    # -------------------------- INFO functions -------------------------------
     def _validate(self):
         from pyworkflow.em.convert import ImageHandler
         ci = self.getImportClass()
@@ -388,13 +379,13 @@ class ProtImportMicrographs(ProtImportMicBase):
                 if imgh.isImageFile(micFn):
                     _, _, z, n = imgh.getDimensions(micFn)
                     if n > 1 or z > 1:
-                        errors.append("The protocol not support micrographs "
-                                      "stored in stacks. If you want to "
-                                      "obtain your micrographs individually, "
-                                      "you can run the following command:\n"
-                                      "scipion run scipion_directory/scripts/"
-                                      "split_stacks.py --files *your files* "
-                                      "--ext *extension*")
+                        errors.append(
+                            "The protocol not support micrographs stored in "
+                            "stacks. If you want to obtain your micrographs "
+                            "individually, you can run the following command:"
+                            "\nscipion run scipion_directory/scripts/"
+                            "split_stacks.py --files *your files* "
+                            "--ext *extension*")
                 # JMRT: only check the first image, for large dataset
                 # even reading the header can take a while
                 break 
@@ -409,7 +400,7 @@ class ProtImportMicrographs(ProtImportMicBase):
         else:
             return [self.summaryVar.get('No summary information.')]
     
-    #--------------------------- UTILS functions -------------------------------
+    # -------------------------- UTILS functions ------------------------------
     def getImportClass(self):
         """ Return the class in charge of importing the files. """
         if self.importFrom == self.IMPORT_FROM_EMX:
@@ -441,11 +432,6 @@ class ProtImportMovies(ProtImportMicBase):
         self.serverSocket = None
         self.connectionList = None
 
-    def _getBlacklistSetClass(self):
-        """ Returns the class to be blacklisted by this protocol.
-        """
-        return "SetOfMovies"
-    
     def _defineAcquisitionParams(self, form):
         group = ProtImportMicBase._defineAcquisitionParams(self, form)
         
@@ -525,8 +511,7 @@ class ProtImportMovies(ProtImportMicBase):
                                        "imported that you want to exclude for "
                                        "this import.")
 
-
-    # --------------------------- INSERT functions -----------------------------
+    # --------------------------- INSERT functions ----------------------------
     def _insertAllSteps(self):
         # Only the import movies has property 'inputIndividualFrames'
         # so let's query in a non-intrusive manner
