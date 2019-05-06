@@ -33,7 +33,6 @@ from pyworkflow.protocol.params import PointerParam
 from base import ProtImportFiles
 
 
-
 class ProtImportCTF(ProtImportFiles):
     """Common protocol to import a set of ctfs into the project"""
     # This label should be set in subclasses
@@ -48,7 +47,7 @@ class ProtImportCTF(ProtImportFiles):
     IMPORT_FROM_EMAN2 = 4
     IMPORT_FROM_SCIPION = 5
 
-    #--------------------------- DEFINE param functions ------------------------
+    # -------------------------- DEFINE param functions -----------------------
 
     def _defineImportParams(self, form):
         """ Just redefine to put some import parameters.
@@ -67,7 +66,7 @@ class ProtImportCTF(ProtImportFiles):
         return ['auto', 'xmipp', 'grigorieff', 'gctf', 'eman2', 'scipion']
 
     def _getDefaultChoice(self):
-        return  self.IMPORT_FROM_AUTO
+        return self.IMPORT_FROM_AUTO
 
     def _getFilesCondition(self):
         """ Return an string representing the condition
@@ -76,11 +75,10 @@ class ProtImportCTF(ProtImportFiles):
         """
         return True
 
-    #--------------------------- INSERT functions ------------------------------
+    # -------------------------- INSERT functions -----------------------------
     def _insertAllSteps(self):
         importFrom = self.importFrom.get()
         self._insertFunctionStep('importCTFStep', importFrom)
-
 
     def getImportClass(self):
         """ Return the class in charge of importing the files. """
@@ -110,7 +108,7 @@ class ProtImportCTF(ProtImportFiles):
         else:
             return None
         
-    #--------------------------- STEPS functions -------------------------------
+    # -------------------------- STEPS functions ------------------------------
     def importCTFStep(self, importFrom):
         """ Copy ctfs matching the filename pattern. """
         ci = self.getImportClass()
@@ -192,7 +190,7 @@ class ProtImportCTF(ProtImportFiles):
         else:
             self._defineCtfRelation(inputMics, ctfSet)
 
-    #--------------------------- INFO functions --------------------------------
+    # -------------------------- INFO functions -------------------------------
     
     def _summary(self):
         summary = []

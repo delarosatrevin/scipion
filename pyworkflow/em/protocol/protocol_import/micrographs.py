@@ -38,7 +38,7 @@ from pyworkflow.utils.properties import Message
 from pyworkflow.em import ImageHandler
 from pyworkflow.em.constants import SAMPLING_FROM_IMAGE, SAMPLING_FROM_SCANNER
 
-from images import ProtImportImages
+from .images import ProtImportImages
 
 
 class ProtImportMicBase(ProtImportImages):
@@ -331,6 +331,38 @@ class ProtImportMicrographs(ProtImportMicBase):
                       condition='(importFrom == %d)' % self.IMPORT_FROM_SCIPION,
                       label='Micrographs sqlite file',
                       help="Select the micrographs sqlite file.\n")
+
+    def _defineParams(self, form):
+        ProtImportMicBase._defineParams(self, form)
+
+        extra = form.getSection('Extra')
+
+        group = extra.addGroup('Associated Data')
+        group.addParam('doInputDW', params.BooleanParam,
+                       default=False,
+                       label="Input dose-weighted micrographs?",
+                       help="Select *Yes* if you want to associate the input "
+                            "dose-weighted (DW) micrographs to the main set. "
+                            "The original file pattern should refer to non-DW "
+                            "and then you provide the suffix to match between "
+                            "non-DW and DW micrographs. ")
+        group.addParam('inputDwSuffix', params.StringParam,
+                       condition='doInputDW',
+                       label='Dose-weighted micrograph suffix',
+                       help='To match between non-DW and DW micrographs, the '
+                            'suffix will added to the micrograph file name '
+                            'after removing its extension. The suffix should '
+                            'contain the file extension as well.')
+        # TODO: Maybe could be interesting to input CTF as well
+        # group.addParam('doInputCTF', params.BooleanParam,
+        #                default=False,
+        #                label="Input CTF associated with input micrographs?",
+        #                help="Select *Yes* if you want to import associated CTF.")
+        # group.addParam('inputCtfSuffix', params.StringParam,
+        #                condition='doInputCTF',
+        #                label='CTF files suffix',
+        #                help='To match between non-DW and DW micrographs, the '
+        #                     'suffix will ')
     
     # -------------------------- INSERT functions -----------------------------
     def _insertAllSteps(self):
@@ -368,7 +400,18 @@ class ProtImportMicrographs(ProtImportMicBase):
                         '(extra disk space)')
             
         self.summaryVar.set(summary)
-    
+
+    def importImagesStep(self, pattern, voltage, sphericalAberration,
+                         amplitudeContrast, magnification):
+        """ Override this method to input associated DW micrographs. """
+        ProtImportMicBase.importImagesStep(
+            self, pattern, voltage, sphericalAberration, amplitudeContrast,
+            magnification)
+        if self.doInputDW:
+            self._defineOutputs(outputMicrographsDW=self._dwMics)
+            self._defineTransformRelation(self.outputMicrographs,
+                                          self.outputMicrographsDW)
+
     # -------------------------- INFO functions -------------------------------
     def _validate(self):
         from pyworkflow.em.convert import ImageHandler
@@ -418,7 +461,29 @@ class ProtImportMicrographs(ProtImportMicBase):
             return ScipionImport(self, self.importFilePath) 
         else:
             self.importFilePath = ''
-            return None       
+            return None
+
+    def _addImageToSet(self, img, imgSet):
+        """ Override this method from base class to consider when the
+        associated DW micrographs are input as well.
+        """
+        if imgSet.isEmpty():
+            self._setupFirstImage(img, imgSet)
+            if self.doInputDW:
+                self._dwMics = self._createSetOfMicrographs(suffix='_DW')
+                self._dwMics.copyInfo(imgSet)
+
+        if self.doInputDW:
+            dwImg = img.clone()
+            fn = img.getFileName()
+            baseFn = pwutils.removeExt(os.path.realpath(fn))
+            realFn = baseFn + self.inputDwSuffix.get()  # TODO: Check if exists
+            uniqueFn = self._getExtraPath(self._getUniqueFileName(realFn))
+            self.getCopyOrLink()(realFn, uniqueFn)
+            dwImg.setLocation(uniqueFn)
+            self._dwMics.append(dwImg)
+
+        imgSet.append(img)
 
 
 class ProtImportMovies(ProtImportMicBase):
@@ -461,7 +526,6 @@ class ProtImportMovies(ProtImportMicBase):
 
         extra = form.getSection('Extra')
         group = extra.addGroup('Frames', expertLevel=params.LEVEL_ADVANCED)
-        
         framesCondition = "inputIndividualFrames"
         
         group.addParam('inputIndividualFrames', params.BooleanParam,
