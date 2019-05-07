@@ -45,6 +45,7 @@ from .protocol_batch import *
 from .protocol_classes_consensus import ProtClassesConsensus
 from .protocol_extract_coordinates import ProtExtractCoords
 from .protocol_create_stream_data import ProtCreateStreamData
+from .protocol_micrographs_thumbnail import ProtMicrographThumbnail
 from .parallel import ProtTestParallel
 
 from .protocol_import import *
