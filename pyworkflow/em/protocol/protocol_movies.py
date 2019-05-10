@@ -45,7 +45,6 @@ from protocol_micrographs import ProtPreprocessMicrographs
 from protocol_particles import ProtExtractParticles
 
 
-
 class ProtProcessMovies(ProtPreprocessMicrographs):
     """
     Protocol base for processing movies from direct detectors cameras.
@@ -87,7 +86,7 @@ class ProtProcessMovies(ProtPreprocessMicrographs):
         gain, dark = self.getGainAndDark()
         return (getattr(self, 'CORRECT_GAIN', False) and (gain or dark))
 
-    #--------------------------- DEFINE param functions ----------------------
+    # -------------------------- DEFINE param functions ----------------------
     def _defineParams(self, form):
         form.addSection(label=Message.LABEL_INPUT)
 
@@ -96,7 +95,7 @@ class ProtProcessMovies(ProtPreprocessMicrographs):
                       label=Message.LABEL_INPUT_MOVS,
                       help='Select a set of previously imported movies.')
 
-    #--------------------------- INSERT steps functions ---------------------
+    # -------------------------- INSERT steps functions ---------------------
     def _insertAllSteps(self):
         # Build the list of all processMovieStep ids by 
         # inserting each of the steps for each movie
@@ -118,13 +117,10 @@ class ProtProcessMovies(ProtPreprocessMicrographs):
 
     # STEP to convert correction images if apply
     def _convertInputStep(self):
-
         movs = self.inputMovies.get()
-
         # Convert gain
         gain = movs.getGain()
         movs.setGain(self.__convertCorrectionImage(gain))
-
         # Convert dark
         dark = movs.getDark()
         movs.setDark(self.__convertCorrectionImage(dark))
@@ -177,7 +173,6 @@ class ProtProcessMovies(ProtPreprocessMicrographs):
 
         else:
             return correctionImage
-
 
     def _insertFinalSteps(self, deps):
         """ This should be implemented in subclasses"""
@@ -236,7 +231,7 @@ class ProtProcessMovies(ProtPreprocessMicrographs):
             self.updateSteps()
 
     def _checkNewOutput(self):
-        pass # To be implemented in sub-classes
+        pass  # To be implemented in sub-classes
 
     def _stepsCheck(self):
         # Input movie set can be loaded or None when checked for new inputs
@@ -380,7 +375,7 @@ class ProtProcessMovies(ProtPreprocessMicrographs):
         # Mark this movie as finished
         open(movieDoneFn, 'w').close()
 
-    #--------------------------- UTILS functions ----------------------------
+    # -------------------------- UTILS functions ----------------------------
     def _getOutputMovieFolder(self, movie):
         """ Create a Movie folder where to work with it. """
         return self._getTmpPath('movie_%06d' % movie.getObjId())
@@ -418,7 +413,7 @@ class ProtProcessMovies(ProtPreprocessMicrographs):
             for movie in movieList:
                 f.write('%d\n' % movie.getObjId())
 
-    #--------------------------- OVERRIDE functions --------------------------
+    # -------------------------- OVERRIDE functions --------------------------
     def _filterMovie(self, movie):
         """ Check if process or not this movie.
         """
@@ -484,7 +479,7 @@ class ProtMovieAssignGain(ProtPreprocessMicrographs):
     def __init__(self, **kwargs):
         ProtPreprocessMicrographs.__init__(self, **kwargs)
 
-    #--------------------------- DEFINE param functions ------------------------
+    # -------------------------- DEFINE param functions -----------------------
     def _defineParams(self, form):
         form.addSection(label=Message.LABEL_INPUT)
 
@@ -497,11 +492,11 @@ class ProtMovieAssignGain(ProtPreprocessMicrographs):
                       help="Select a gain image. The movie will be corrected "
                            "as newMovie=Movie/gain")
 
-    #--------------------------- INSERT steps functions ------------------------
+    # -------------------------- INSERT steps functions -----------------------
     def _insertAllSteps(self):
         self._insertFunctionStep('createOutputStep')
 
-    #--------------------------- STEPS functions -------------------------------
+    # -------------------------- STEPS functions ------------------------------
     def createOutputStep(self):
         moviesIn = self.inputMovies.get()
         moviesOut = self._createSetOfMovies()
