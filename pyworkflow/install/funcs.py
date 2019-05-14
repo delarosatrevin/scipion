@@ -437,6 +437,7 @@ class Environment:
         default = kwargs.get('default', True)
         neededProgs = kwargs.get('neededProgs', [])
         libChecks = kwargs.get('libChecks', [])
+        configure = kwargs.get('configure', 'configure')
 
         if default or name in sys.argv[2:]:
             # Check that we have the necessary programs and libraries in place.
@@ -477,7 +478,7 @@ class Environment:
         if not cmake:
             flags.append('--prefix=%s' % prefix)
             flags.append('--libdir=%s/lib' % prefix)
-            t.addCommand('./configure %s' % ' '.join(flags),
+            t.addCommand('./%s %s' % (configure, ' '.join(flags)),
                          targets=makeFile, cwd=configPath,
                          out='%s/log/%s_configure.log' % (prefix, name),
                          always=configAlways, environ=environ)

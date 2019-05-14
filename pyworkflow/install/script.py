@@ -57,7 +57,7 @@ def defineBinaries(args=None):
     # SCIPION = os.path.dirname(SCIPION)
     # SCIPION = os.path.abspath(SCIPION)
 
-
+    SW = env.getSoftware()
     SW_BIN = env.getBinFolder()
     SW_LIB = env.getLibFolder()
     SW_INC = env.getIncludeFolder()
@@ -137,12 +137,38 @@ def defineBinaries(args=None):
         tar='fftw-3.3.4.tgz',
         flags=['--enable-threads', '--enable-shared'],
         clean=True,
-        default=False) # We need to clean to configure again with --enable-float
+        default=False)  # We need to clean to configure again with --enable-float
 
     fftw3f = env.addLibrary(
         'fftw3f',
         tar='fftw-3.3.4.tgz',
         flags=['--enable-threads', '--enable-shared', '--enable-float'],
+        default=False)
+
+    openmpi = env.addLibrary(
+        'openmpi',
+        tar='openmpi-2.1.6.tar.gz',
+        url='https://download.open-mpi.org/release/open-mpi/v2.1/'
+            'openmpi-2.1.6.tar.gz',
+        targets=env.getLib('mpi'),
+        default=False)
+
+    opensslTmp = '%s/openssl-1.1.1b' % SW_TMP
+    opensslLib = '%s/libssl.so' % SW_LIB
+    opensslLogs = ['%s/log/openssl_%s.log' % (SW, prefix)
+                   for prefix in ['config', 'make', 'make_install']]
+    openssl = env.addLibrary(
+        'openssl',
+        tar='openssl-1.1.1b.tar.gz',
+        url='https://www.openssl.org/source/openssl-1.1.1b.tar.gz',
+        configure='config',
+        #commands=[('cd %s; ./config --prefix=%s  > %s 2>&1' % (opensslTmp, SW),
+                  #  '%s/Makefile' % opensslTmp),
+                  # ('cd %s; make -j %d > %s 2>&1; make install > %s 2>&1; '
+                  #  % (opensslTmp, env.getProcessors()),
+                  #  opensslLib)
+                  # ],
+        targets=opensslLib,
         default=False)
 
     osBuildDir = 'tcl8.6.1/unix'
@@ -177,8 +203,8 @@ def defineBinaries(args=None):
     # Special case: tk does not make the link automatically, go figure.
     tk_wish = env.addTarget('tk_wish')
     tk_wish.addCommand('ln -v -s wish8.6 wish',
-                       targets=SW_BIN + '/wish',
-                       cwd= SW_BIN)
+                       targets=SW_BIN+'/wish',
+                       cwd=SW_BIN)
 
     jpeg = env.addLibrary(
         'jpeg',
