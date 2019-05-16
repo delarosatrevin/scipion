@@ -135,7 +135,8 @@ def defineBinaries(args=None):
         'java',
         tar='openjdk-8u40-b25-linux-x64-10_feb_2015.tar.gz',
         buildDir=javaUntarDir,
-        url='https://download.java.net/openjdk/jdk8u40/ri/openjdk-8u40-b25-linux-x64-10_feb_2015.tar.gz',
+        url='https://download.java.net/openjdk/jdk8u40/ri/'
+            'openjdk-8u40-b25-linux-x64-10_feb_2015.tar.gz',
         commands=[('mv %s/%s %s; rm %s/src.zip' %
                    (SW_TMP, javaUntarDir, javaSwDir, javaSwDir), javaSwDir)],
         targets='%s/bin/javac' % javaSwDir,
@@ -166,22 +167,12 @@ def defineBinaries(args=None):
         targets=env.getLib('mpi'),
         default=False)
 
-    opensslTmp = '%s/openssl-1.1.1b' % SW_TMP
-    opensslLib = '%s/libssl.so' % SW_LIB
-    opensslLogs = ['%s/log/openssl_%s.log' % (SW, prefix)
-                   for prefix in ['config', 'make', 'make_install']]
     openssl = env.addLibrary(
         'openssl',
         tar='openssl-1.1.1b.tar.gz',
         url='https://www.openssl.org/source/openssl-1.1.1b.tar.gz',
         configure='config',
-        #commands=[('cd %s; ./config --prefix=%s  > %s 2>&1' % (opensslTmp, SW),
-                  #  '%s/Makefile' % opensslTmp),
-                  # ('cd %s; make -j %d > %s 2>&1; make install > %s 2>&1; '
-                  #  % (opensslTmp, env.getProcessors()),
-                  #  opensslLib)
-                  # ],
-        targets=opensslLib,
+        targets='%s/libssl.so' % SW_LIB,
         default=False)
 
     osBuildDir = 'tcl8.6.1/unix'
