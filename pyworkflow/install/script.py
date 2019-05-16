@@ -129,6 +129,18 @@ def defineBinaries(args=None):
                    % env.getProcessors(), SW_BIN + '/cmake')],
         default=False)
 
+    javaUntarDir = 'java-se-8u40-ri'
+    javaSwDir = '%s/java8' % SW
+    java = env.addLibrary(
+        'java',
+        tar='openjdk-8u40-b25-linux-x64-10_feb_2015.tar.gz',
+        buildDir=javaUntarDir,
+        url='https://download.java.net/openjdk/jdk8u40/ri/openjdk-8u40-b25-linux-x64-10_feb_2015.tar.gz',
+        commands=[('mv %s/%s %s; rm %s/src.zip' %
+                   (SW_TMP, javaUntarDir, javaSwDir, javaSwDir), javaSwDir)],
+        targets='%s/bin/javac' % javaSwDir
+    )
+
     # In order to get both the float and double libraries of fftw
     # we need to execute ./configure; make; make install twice
     # see: http://www.fftw.org/fftw2_doc/fftw_6.html
