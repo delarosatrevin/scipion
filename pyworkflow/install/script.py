@@ -164,6 +164,10 @@ def defineBinaries(args=None):
         tar='openmpi-2.1.6.tar.gz',
         url='https://download.open-mpi.org/release/open-mpi/v2.1/'
             'openmpi-2.1.6.tar.gz',
+        # flags=['--with-wrapper-ldflags="-L%s -Wl,-rpath,../lib"'
+        #        % (SW_LIB),
+        #        '--disable-wrapper-rpath',
+        #        '--disable-wrapper-runpath'],
         targets=env.getLib('mpi'),
         default=False)
 
