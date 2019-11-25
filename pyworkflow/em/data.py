@@ -64,10 +64,19 @@ class Acquisition(EMObject):
         self._doseInitial = Float(kwargs.get('doseInitial', 0))
         self._dosePerFrame = Float(kwargs.get('dosePerFrame', None))
 
+        # Required for Relion info, problem with loadAllProperties now
+        # to make it general enough
+        self.opticsGroupName = String()
+        self.beamTiltX = Float()
+        self.beamTiltY = Float()
+        self.mtfFile = String()
+        self.defectFile = String()
+
     def copyInfo(self, other):
-        self.copyAttributes(other, '_magnification', '_voltage',
-                            '_sphericalAberration', '_amplitudeContrast',
-                            '_doseInitial', '_dosePerFrame')
+        # self.copyAttributes(other, '_magnification', '_voltage',
+        #                     '_sphericalAberration', '_amplitudeContrast',
+        #                     '_doseInitial', '_dosePerFrame')
+        self.copy(other, copyId=False)
 
     def getMagnification(self):
         return self._magnification.get()
