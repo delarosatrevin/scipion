@@ -78,8 +78,9 @@ ACTION_SWITCH_VIEW = 'Switch_View'
 ACTION_COLLAPSE = 'Collapse'
 ACTION_EXPAND = 'Expand'
 ACTION_LABELS = 'Labels'
-ACTION_RESTART_WORKFLOW = 'Restart workflow'
-ACTION_CONTINUE_WORKFLOW = 'Continue workflow'
+ACTION_RESTART_WORKFLOW = Message.LABEL_RESTART_WORKFLOW
+ACTION_CONTINUE_WORKFLOW = Message.LABEL_CONTINUE_WORKFLOW
+ACTION_STOP_WORKFLOW = Message.LABEL_STOP_WORKFLOW
 
 RUNS_TREE = Icon.RUNS_TREE
 RUNS_LIST = Icon.RUNS_LIST
@@ -109,7 +110,8 @@ ActionIcons = {
     ACTION_EXPAND: 'fa-plus-square.png',
     ACTION_LABELS: Icon.TAGS,
     ACTION_RESTART_WORKFLOW: Icon.ACTION_EXECUTE,
-    ACTION_CONTINUE_WORKFLOW: Icon.ACTION_CONTINUE
+    ACTION_CONTINUE_WORKFLOW: Icon.ACTION_CONTINUE,
+    ACTION_STOP_WORKFLOW: Icon.ACTION_STOP_WORKFLOW
 }
 
 
@@ -204,7 +206,8 @@ class RunsTreeProvider(pwgui.tree.ProjectRunsTreeProvider):
                 (ACTION_LABELS, True),
                 (ACTION_SELECT_TO, True),
                 (ACTION_RESTART_WORKFLOW, single),
-                (ACTION_CONTINUE_WORKFLOW, single)
+                (ACTION_CONTINUE_WORKFLOW, single),
+                (ACTION_STOP_WORKFLOW, single)
                 ]
 
     def getObjectActions(self, obj):
@@ -341,7 +344,7 @@ class StepsWindow(pwgui.browser.BrowserWindow):
 
 class SearchProtocolWindow(pwgui.Window):
     def __init__(self, parentWindow, **kwargs):
-        pwgui.Window.__init__(self, title="Search Protocol",
+        pwgui.Window.__init__(self, title="Search for a protocol",
                               masterWindow=parentWindow)
         content = tk.Frame(self.root, bg='white')
         self._createContent(content)
@@ -362,6 +365,7 @@ class SearchProtocolWindow(pwgui.Window):
         self._searchVar = tk.StringVar()
         entry = tk.Entry(frame, bg='white', textvariable=self._searchVar)
         entry.bind('<Return>', self._onSearchClick)
+        entry.bind('<KP_Enter>', self._onSearchClick)
         entry.focus_set()
         entry.grid(row=0, column=1, sticky='nw')
         btn = pwgui.widgets.IconButton(frame, "Search",
@@ -374,9 +378,23 @@ class SearchProtocolWindow(pwgui.Window):
     def _createResultsBox(self, content):
         frame = tk.Frame(content, bg=Color.LIGHT_GREY_COLOR, padx=5, pady=5)
         pwgui.configureWeigths(frame)
-        self._resultsTree = self.master.getViewWidget()._createProtocolsTree(frame)
+        self._resultsTree = self.master.getViewWidget()._createProtocolsTree(
+            frame, show=None, columns=("streaming", "installed", "help", "score"))
+        self._configureTreeColumns()
         self._resultsTree.grid(row=0, column=0, sticky='news')
         frame.grid(row=1, column=0, sticky='news', padx=5, pady=5)
+
+    def _configureTreeColumns(self):
+        self._resultsTree.column('#0', width=300, stretch=tk.FALSE)
+        self._resultsTree.column('streaming', width=100, stretch=tk.FALSE)
+        self._resultsTree.column('installed', width=110, stretch=tk.FALSE)
+        self._resultsTree.column('help', minwidth=300, stretch=tk.YES)
+        self._resultsTree.column('score', width=50, stretch=tk.FALSE)
+        self._resultsTree.heading('#0', text='Protocol')
+        self._resultsTree.heading('streaming', text='Streamified')
+        self._resultsTree.heading('installed', text='Installation')
+        self._resultsTree.heading('help', text='Help')
+        self._resultsTree.heading('score', text='Score')
 
     def _onSearchClick(self, e=None):
         self._resultsTree.clear()
@@ -384,22 +402,39 @@ class SearchProtocolWindow(pwgui.Window):
         emProtocolsDict = em.Domain.getProtocols()
         protList = []
 
+        def addSearchWeight(line2Search, searchtext):
+        # Adds a weight value for the search
+            weight = 0
+
+            # prioritize findings in label
+            if keyword in line2Search[1]:
+                weight += 3
+
+            for value in line2Search[2:]:
+                weight += 1 if searchtext in value else 0
+
+            return line2Search + (weight,)
+
         for key, prot in emProtocolsDict.iteritems():
             if ProtocolTreeConfig.isAFinalProtocol(prot, key):
                 label = prot.getClassLabel().lower()
-                if keyword in label:
-                    protList.append((key,
-                                     label,
-                                     prot.isInstalled()))
+                line = (key, label,
+                        "installed" if prot.isInstalled() else "missing installation",
+                        prot.getHelpText().strip().replace('\r', '').replace('\n', ''),
+                        "streamified" if prot.worksInStreaming() else "static")
+
+                line = addSearchWeight(line, keyword)
+                # something was found: weight > 0
+                if line[5] != 0:
+                    protList.append(line)
 
         # Sort by label
-        protList.sort(key=lambda x: x[1])  # sort by label
+        protList.sort(reverse=True, key=lambda x: x[5])  # sort by weight
 
-        for key, label, installed in protList:
-            tag = ProtocolTreeConfig.getProtocolTag(installed)
-            if not installed: label += " (not installed)"
+        for key, label, installed, help, streamified, weight in protList:
+            tag = ProtocolTreeConfig.getProtocolTag(installed == 'installed')
             self._resultsTree.insert('', 'end', key,
-                                     text=label, tags=(tag))
+                                     text=label, values=(streamified, installed, help, weight, weight), tags=(tag))
 
 
 class RunIOTreeProvider(pwgui.tree.TreeProvider):
@@ -971,10 +1006,10 @@ class ProtocolsView(tk.Frame):
             action, cond = actionTuple
             displayAction(action, i, cond)
 
-    def _createProtocolsTree(self, parent, background=Color.LIGHT_GREY_COLOR):
+    def _createProtocolsTree(self, parent, background=Color.LIGHT_GREY_COLOR, show='tree', columns=None):
         self.style.configure("W.Treeview", background=background, borderwidth=0,
                              fieldbackground=background)
-        t = pwgui.tree.Tree(parent, show='tree', style='W.Treeview')
+        t = pwgui.tree.Tree(parent, show=show, style='W.Treeview', columns=columns)
         t.column('#0', minwidth=300)
         # Protocol nodes
         t.tag_configure(ProtocolTreeConfig.TAG_PROTOCOL,
@@ -983,6 +1018,8 @@ class ProtocolsView(tk.Frame):
                    '<Double-1>', self._protocolItemClick)
         t.tag_bind(ProtocolTreeConfig.TAG_PROTOCOL,
                    '<Return>', self._protocolItemClick)
+        t.tag_bind(ProtocolTreeConfig.TAG_PROTOCOL,
+                   '<KP_Enter>', self._protocolItemClick)
 
         # Disable protocols (not installed) are allowed to be added.
         t.tag_configure(ProtocolTreeConfig.TAG_PROTOCOL_DISABLED,
@@ -991,6 +1028,8 @@ class ProtocolsView(tk.Frame):
                    '<Double-1>', self._protocolItemClick)
         t.tag_bind(ProtocolTreeConfig.TAG_PROTOCOL_DISABLED,
                    '<Return>', self._protocolItemClick)
+        t.tag_bind(ProtocolTreeConfig.TAG_PROTOCOL_DISABLED,
+                   '<KP_Enter>', self._protocolItemClick)
 
         t.tag_configure('protocol_base', image=self.getImage('class_obj.gif'))
         t.tag_configure('protocol_group', image=self.getImage('class_obj.gif'))
@@ -1824,6 +1863,27 @@ class ProtocolsView(tk.Frame):
             self.project.copyProtocol(protocols)
             self.refreshRuns()
 
+    def _stopWorkFlow(self, action):
+
+        protocols = self._getSelectedProtocols()
+        errorList = []
+        if pwgui.dialog.askYesNo(Message.TITLE_STOP_WORKFLOW_FORM,
+                                 Message.TITLE_STOP_WORKFLOW, self.root):
+            defaultModeMessage = 'Stopping the workflow...'
+            message = FloatingMessage(self.root, defaultModeMessage)
+            message.show()
+            errorList = self.project.stopWorkFlow(protocols[0])
+            self.refreshRuns()
+            message.close()
+        if errorList:
+            msg = ''
+            for error in errorList:
+                msg = msg + str(error)
+            pwgui.dialog.MessageDialog(self,
+                                       Message.TITLE_STOPPED_WORKFLOW_FAILED,
+                                       Message.TITLE_STOPPED_WORKFLOW_FAILED + msg,
+                                       'fa-times-circle_alert.png')
+
     def _launchWorkFlow(self, action):
         """
         This function can launch a workflow from a selected protocol in two
@@ -1835,8 +1895,8 @@ class ProtocolsView(tk.Frame):
         defaultModeMessage = 'Checking the workflow to continue...'
 
         if action == ACTION_RESTART_WORKFLOW:
-            if pwgui.dialog.askYesNo(Message.TITLE_RESTART_WORKFLOW,
-                                     Message.LABEL_RESTART_WORKFLOW, self.root):
+            if pwgui.dialog.askYesNo(Message.TITLE_RESTART_WORKFLOW_FORM,
+                                     Message.TITLE_RESTART_WORKFLOW, self.root):
                 defaultMode = pwprot.MODE_RESTART
                 defaultModeMessage = 'Checking the workflow to restart...'
 
@@ -1859,8 +1919,8 @@ class ProtocolsView(tk.Frame):
             for error in errorList:
                 msg = msg + str(error)
             pwgui.dialog.MessageDialog(self,
-                                       Message.TITLE_LAUNCHED_WORKFLOW_FAILED,
-                                       Message.LABEL_LAUNCHED_WORKFLOW_FAILED + msg,
+                                       Message.TITLE_LAUNCHED_WORKFLOW_FAILED_FORM,
+                                       Message.TITLE_LAUNCHED_WORKFLOW_FAILED + msg,
                                        'fa-times-circle_alert.png')
 
     def _selectLabels(self):
@@ -1911,25 +1971,32 @@ class ProtocolsView(tk.Frame):
             self._updateSelection()
             self.drawRunsGraph()
 
-    def _exportProtocols(self):
+    def _exportProtocols(self, defaultPath=None, defaultBasename=None):
         protocols = self._getSelectedProtocols()
 
         def _export(obj):
             filename = os.path.join(browser.getCurrentDir(),
                                     browser.getEntryValue())
             try:
-                self.project.exportProtocols(protocols, filename)
-                self.windows.showInfo("Workflow successfully saved to '%s' "
-                                      % filename)
+                if (not os.path.exists(filename) or
+                    self.windows.askYesNo("File already exists",
+                                          "*%s* already exists, do you want "
+                                          "to overwrite it?" % filename)):
+                    self.project.exportProtocols(protocols, filename)
+                    self.windows.showInfo("Workflow successfully saved to '%s' "
+                                          % filename)
+                else:  # try again
+                    self._exportProtocols(defaultPath=browser.getCurrentDir(),
+                                          defaultBasename=browser.getEntryValue())
             except Exception as ex:
                 self.windows.showError(str(ex))
 
         browser = pwgui.browser.FileBrowserWindow(
             "Choose .json file to save workflow",
             master=self.windows,
-            path=self.project.getPath(''),
+            path=defaultPath or self.project.getPath(''),
             onSelect=_export,
-            entryLabel='File  ', entryValue='workflow.json')
+            entryLabel='File  ', entryValue=defaultBasename or 'workflow.json')
         browser.show()
 
     def _exportUploadProtocols(self):
@@ -2077,6 +2144,8 @@ class ProtocolsView(tk.Frame):
                     self._launchWorkFlow(action)
                 elif action == ACTION_CONTINUE_WORKFLOW:
                     self._launchWorkFlow(action)
+                elif action == ACTION_STOP_WORKFLOW:
+                    self._stopWorkFlow(action)
 
             except Exception as ex:
                 self.windows.showError(str(ex))

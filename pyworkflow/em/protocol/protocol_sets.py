@@ -142,8 +142,7 @@ class ProtUnionSet(ProtSets):
 
         # Renumber from the beginning if either the renumber option is selected
         # or we find duplicated ids in the sets
-        cleanIds = ((not self.ignoreDuplicates.get() and self.duplicatedIds())
-                        or self.renumber.get())
+        cleanIds = not self.ignoreDuplicates.get() and self.duplicatedIds()
 
         #TODO ROB remove ignoreExtraAttributes condition
         #or implement it. But this will be for Scipion 1.2
@@ -158,7 +157,9 @@ class ProtUnionSet(ProtSets):
                     copyAttrs.append(attr)
 
         idsList = []
+        setNum = 0
         for itemSet in self.inputSets:
+            setNum += 1
             for obj in itemSet.get():
                 objId = obj.getObjId()
                 if self.ignoreDuplicates.get():
@@ -171,18 +172,25 @@ class ProtUnionSet(ProtSets):
                     newObj.copyAttributes(obj, *copyAttrs)
 
                     self.cleanExtraAttributes(newObj, commonAttrs)
-                    if not cleanIds:
+                    if not cleanIds or setNum == 1:
                         newObj.setObjId(objId)
                 else:
                     newObj = obj
 
-                if cleanIds:
+                if (cleanIds and setNum > 1) or self.renumber.get():
                     newObj.cleanObjId()
+
                 outputSet.append(newObj)
 
         self._defineOutputs(outputSet=outputSet)
         for itemSet in self.inputSets:
             self._defineSourceRelation(itemSet, outputSet)
+
+    # Overwrite SetOfCoordinates creation
+    def _createSetOfCoordinates(self, suffix=''):
+        coordSet = self.inputSets[0].get()
+        micSet = coordSet.getMicrographs()
+        return ProtSets._createSetOfCoordinates(self, micSet, suffix)
 
     def cleanExtraAttributes(self, obj, verifyAttrs, prefix=""):
 
@@ -494,15 +502,15 @@ class ProtSubSet(ProtSets):
             # if it is 'difference' we want that item is None
             # (not found, different)
             if self.setOperation == self.SET_INTERSECTION:
-                checkElem = lambda e: e is not None
+                checkElem = lambda e: e
             else:
-                checkElem = lambda e: e is None 
+                checkElem = lambda e: not e
             
             for origElem in inputFullSet:
                 # TODO: this can be improved if we perform
                 # intersection directly in sqlite
-                otherElem = inputSubSet[origElem.getObjId()]
-                if checkElem(otherElem):
+                exists = origElem.getObjId() in inputSubSet
+                if checkElem(exists):
                     outputSet.append(origElem)
             
         if outputSet.getSize():
@@ -596,9 +604,15 @@ class ProtSubSet(ProtSets):
         if not hasattr(self, key):
             return ["Protocol has not finished yet."]
         else:
-            return ["The elements of %s that also are referenced in %s" %
+            if self.setOperation == self.SET_INTERSECTION:
+                return ["The elements of %s that also are referenced in %s" %
                     (self.inputFullSet.getName(), self.inputSubSet.getName()),
                     "are now in %s" % getattr(self, key).getName()]
+            else:
+                return ["%s has elements only present in %s." %
+                        (getattr(self, key).getName(),
+                         self.inputFullSet.getName())
+                        ]
 
 
 class ProtSubSetByMic(ProtSets):

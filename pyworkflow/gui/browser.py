@@ -555,6 +555,7 @@ class FileBrowser(ObjectBrowser):
                              textvariable=self.pathVar)
         pathEntry.grid(row=0, column=1, sticky='new', pady=3)
         pathEntry.bind("<Return>", self._onEnterPath)
+        pathEntry.bind("<KP_Enter>", self._onEnterPath)
         self.pathEntry = pathEntry
         pathFrame.grid(row=1, column=0, sticky='new')
 
@@ -637,6 +638,8 @@ class FileBrowser(ObjectBrowser):
 
         # Focusing on a item, but nothing is selected 
         # Current dir remains in _lastSelected
+        self._lastSelected = FileInfo(os.path.dirname(newDir),
+                                      os.path.basename(newDir))
         self.tree.focus(itemKeyToFocus)
         
     def _actionUp(self, e=None):

@@ -155,6 +155,12 @@ class RunScheduler():
             failedInputProtocols = False
 
             _log("Checking input data...")
+            # FIXME: This does not cover all the cases:
+            # When the user registers new coordinates after clicking the
+            # "Analyze result" button, this action is registered in the project.sqlite
+            # and not in it's own run.db and never gets updated. It is not critical and
+            # will only affect a combination of json import with extended that will
+            # appear after clicking on the "Analyze result" button.
             for key, attr in protocol.iterInputAttributes():
                 inputProt = _getProtocolFromPointer(attr)
                 _updateProtocol(inputProt, project)
@@ -163,6 +169,7 @@ class RunScheduler():
                     failedInputProtocols = True
 
             if not failedInputProtocols:
+                _updateProtocol(protocol, project)
                 if len(protocol.validate()) > 0:
                         missing = True
                 elif not protocol.worksInStreaming():
