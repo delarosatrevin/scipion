@@ -24,9 +24,10 @@
 # *
 # **************************************************************************
 
+import pyworkflow.object as pwobj
 
 from pyworkflow.em import ALIGN_2D
-from pyworkflow.protocol.params import PointerParam, EnumParam
+from pyworkflow.protocol.params import PointerParam, EnumParam, BooleanParam
 from protocol_2d import ProtAlign2D
 
 
@@ -71,6 +72,12 @@ class ProtAlignmentAssign(ProtAlign2D):
                            "option to apply shifts, so only the angles should be "
                            "used after this operation.")
 
+        form.addParam('assignRandonSubset', BooleanParam, default=True,
+                      label="Assign random subsets?",
+                      help="If yes, the random subset information from the "
+                           "assignment input will be transfered to the output "
+                           "particle. ")
+
         form.addParallelSection(threads=0, mpi=0)
 
     # --------------------------- INSERT steps functions ----------------------
@@ -110,6 +117,12 @@ class ProtAlignmentAssign(ProtAlign2D):
             # Always scale the shifts or set to zero if only angles
             m[:3, 3] *= self.factor
             item.setTransform(alignment)
+
+            if self.assignRandonSubsets:
+                subset = alignedParticle.getAttributeValue('_rlnRandomSubset',
+                                                           None)
+                if subset is not None:
+                    item._rlnRandomSubset = pwobj.Integer(subset)
         else:
             item._appendItem = False
 
